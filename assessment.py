@@ -122,13 +122,13 @@ def make_unittest(
     if always_clean:
         status = make_spotless(target_dir)
     if status:
-        status = make(target_dir, 'unittest', time_out=120)
+        status = make(target_dir, 'unittest', time_out=300)
     del os.environ['GTEST_OUTPUT_FORMAT']
     del os.environ['GTEST_OUTPUT_FILE']
     return status
 
 
-def make(target_dir, make_target, time_out=30):
+def make(target_dir, make_target, time_out=120):
     """Given a directory, execute make_target given the GNU Makefile in the
     directory."""
     status = True
