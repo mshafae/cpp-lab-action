@@ -38,7 +38,13 @@ import platform
 import sys
 from logger import setup_logger
 
-import lab_config as cfg
+try:
+    import lab_config as cfg
+except ImportError as e:
+    from os.path import join, dirname
+
+    sys.path.append(join(join(dirname(__file__), '..'), '.config'))
+    import lab_config as cfg
 
 
 def backup_file(target_file_path):
@@ -178,7 +184,7 @@ authors:
 	@python3 ../.action/checks.py authors $(LAB_PART)
 
 test:
-	@python3 ../.action/solution_check.py $(LAB_PART) $(TARGET)
+	@python3 ../.config/solution_check.py $(LAB_PART) $(TARGET)
 
 ifneq ($(DO_UNITTESTS), "True")
 unittest:

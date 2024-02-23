@@ -46,7 +46,13 @@ from ccsrcutilities import (
 # from parse_header import dict_header, null_dict_header
 from parse_authors import dict_authors, null_authors_list
 from logger import setup_logger
-import lab_config as cfg
+try:
+    import lab_config as cfg
+except ImportError as e:
+    from os.path import join, dirname
+
+    sys.path.append(join(join(dirname(__file__), '..'), '.config'))
+    import lab_config as cfg
 
 
 def days_late(due_date_isoformat, last_commit_isoformat):

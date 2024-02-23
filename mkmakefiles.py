@@ -1,7 +1,14 @@
 #!/usr/bin/env python3
 """A program that generates Makefiles given the lab configuration in a target directory."""
 import sys
-import lab_config as cfg
+
+try:
+    import lab_config as cfg
+except ImportError as e:
+    from os.path import join, dirname
+
+    sys.path.append(join(join(dirname(__file__), '..'), '.config'))
+    import lab_config as cfg
 from ccsrcutilities import mk_makefiles
 
 

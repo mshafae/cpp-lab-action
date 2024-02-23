@@ -33,7 +33,13 @@ from logger import setup_logger
 from ccsrcutilities import lint_check, format_check
 
 # from assessment import make_build
-import lab_config as cfg
+try:
+    import lab_config as cfg
+except ImportError as e:
+    from os.path import join, dirname
+
+    sys.path.append(join(join(dirname(__file__), '..'), '.config'))
+    import lab_config as cfg
 
 from parse_authors import dict_authors, header_keys
 
