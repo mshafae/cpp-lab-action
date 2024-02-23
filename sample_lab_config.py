@@ -3,19 +3,23 @@
 """A lab configuration file."""
 
 from datetime import date
+from os import environ
 
 # A list of target names in the order of the lab's parts.
-targets = ['judge', 'schedule']
+targets = 'units hilo'.split()
 
 lab = {
     # Due date for labs
-    'mon_duedate': date(2023, 11, 15),
-    'tues_duedate': date(2023, 11, 8),
-    'wed_duedate': date(2023, 11, 8),
+    'mon_duedate': date(2023, 10, 11),
+    'tues_duedate': date(2023, 10, 4),
+    'wed_duedate': date(2023, 10, 4),
     'num_parts': len(targets),
     'makefile_name': 'Makefile',
     # Prefix Makefiles with a period to hid them
     'hidden_makefiles': False,
+    # Where the students' authorship information is stored, path relative to
+    # root of repository.
+    'author_file': 'AUTHORS.md',
     # Configuration of target, source files, and header files for each part. These are the files
     # that will be checked for headers, format, and lint.
     # other_src and other_header are files that are needed for building and are not graded/assessed.
@@ -26,8 +30,8 @@ lab = {
     'parts': [
         {
             'target': targets[0],
-            'src': f'{targets[0]}.cc',
-            'header': '',
+            'src': f'{targets[0]}.cc {targets[0]}_functions.cc',
+            'header': f'{targets[0]}_functions.h',
             'other_src': '',
             'other_header': '',
             'test_main': 'run_p1',
@@ -50,19 +54,22 @@ global_tidy_checks = (
     '-checks="*,'
     '-misc-unused-parameters,'
     '-modernize-use-trailing-return-type,'
+    '-modernize-use-nodiscard,'
+    '-modernize-pass-by-value,'
+    '-performance-unnecessary-value-param,'
     '-google-build-using-namespace,'
     '-cppcoreguidelines-avoid-magic-numbers,'
     '-readability-magic-numbers,'
     '-fuchsia-default-arguments-calls,'
     '-llvmlibc-callee-namespace,'
     '-llvmlibc-implementation-in-namespace,'
+    '-llvmlibc-restrict-system-libc-headers,'
     '-llvm-header-guard,'
     '-bugprone-easily-swappable-parameters,'
-    '-llvm-else-after-return,'
+    # '-llvm-else-after-return,'
     '-readability-else-after-return,'
     '-readability-simplify-boolean-expr,'
-    '-altera-unroll-loops,'
-    '-altera-id-dependent-backward-branch,'
+    '-altera-*,'
     "-bugprone-narrowing-conversions,"
     "-cppcoreguidelines-narrowing-conversions,"
     '"'
@@ -74,6 +81,10 @@ global_tidy_checks = (
 # '-cert-msc32-c,'\
 # '-cert-msc51-cpp,'\
 # '-google-runtime-references"'\
+
+if environ.get('LABSOLUTION', None):
+    index = global_tidy_checks.find(',') + 1
+    global_tidy_checks = global_tidy_checks[:index] + '-google-readability-todo,' + global_tidy_checks[index:] 
 
 # Check options which conform to the Google C++ style guide,
 # https://google.github.io/styleguide/cppguide.html.
@@ -168,7 +179,7 @@ makefiles = [global_makefile.copy() for i in range(len(targets))]
 # If a lab has unit tests, set 'do_unit_tests' to True
 makefiles[0].update(
     {
-        'do_unit_tests': False,
+        'do_unit_tests': True,
         'do_format_check': True,
         'do_lint_check': True,
     }

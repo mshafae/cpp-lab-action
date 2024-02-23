@@ -34,7 +34,8 @@ import sys
 import subprocess
 from datetime import date
 from datetime import datetime
-from checks import header_check
+# from checks import header_check
+from checks import authors_check
 from ccsrcutilities import (
     glob_all_src_files,
     strip_and_compare_files,
@@ -42,7 +43,8 @@ from ccsrcutilities import (
     lint_check,
     glob_cc_src_files,
 )
-from parse_header import dict_header, null_dict_header
+# from parse_header import dict_header, null_dict_header
+from parse_authors import dict_authors, null_authors_list
 from logger import setup_logger
 import lab_config as cfg
 
@@ -193,11 +195,12 @@ def build(
     return status
 
 
-def identify(header):
+def identify(authors_list):
     """String to identify submission's owner."""
     ident = '(Malformed Header)'
-    if header:
-        ident = f"Testing {header['name']} {header['email']} {header['github']}"
+    if len(authors_list) > 0:
+        first_author = authors_list[0]
+        ident = f"Testing {first_author['name']} {first_author['email']} {first_author['github']}"
     return ident
 
 
@@ -279,10 +282,9 @@ def csv_solution_check_make(
     csv_fields = [
         'Repo Name',
         'Part',
-        'Author',
+        'Partner0',
         'Partner1',
         'Partner2',
-        'Partner3',
         'PartnerN',
         'Header',
         'Formatting',
@@ -330,15 +332,12 @@ def csv_solution_check_make(
             row['Notes'] = f"❌ No files in {target_directory}."
             status = 1
         else:
-            # Header checks
-            files_missing_header = [
-                file for file in files if not header_check(file)
-            ]
-            files_with_header = [file for file in files if header_check(file)]
-            header = null_dict_header()
-            if len(files_with_header) == 0:
+            # Authors check
+            authors_file = os.path.join(repo_root, cfg.lab['author_file'])
+            authors = null_authors_list()
+            if not os.path.exists(authors_file):                
                 logger.error(
-                    '❌ No header provided in any file in %s.', target_directory
+                    '❌ No AUTHORS.md file provided'
                 )
                 # logger.error('All files: %s', ' '.join(files))
                 row['Header'] = 0
@@ -349,56 +348,38 @@ def csv_solution_check_make(
                 all_files = ' '.join(files)
                 row[
                     'Notes'
-                ] = f'❌ No header provided in any file in {target_directory}.'
+                ] = f'❌ No AUTHORS.md file provided.'
                 status = 1
             else:
-                row['Header'] = 1
-                header = dict_header(files_with_header[0])
+                authors = dict_authors(authors_file)
+                if not authors:
+                    authors = null_authors_list()
+                    logger.error(
+                        '❌ AUTHORS.md malformed.'
+                    )
+                    row['Header'] = 0
+                    row[
+                        'Notes'
+                    ] = '❌ AUTHORS.md malformed.'
+                    status = 1
+                else:
+                    row['Header'] = 1
 
-            logger.info('Start %s', identify(header))
+            logger.info('Start %s', identify(authors))
             logger.info(
                 'All files: %s', ' '.join([os.path.basename(f) for f in files])
             )
-            files_missing_header = [
-                file for file in files if not header_check(file)
-            ]
-            row['Author'] = header['github'].replace('@', '').lower()
-            partners = (
-                header['partners']
-                .replace(',', ' ')
-                .replace('@', '')
-                .lower()
-                .split()
-            )
-
-            for num, name in enumerate(partners, start=1):
-                key = f'Partner{num}'
-                if num > 3:
-                    break
-                row[key] = name
-            if len(partners) > 3:
-                row['PartnerN'] = ';'.join(partners[3:])
-
-            if len(files_missing_header) != 0:
-                file_paths = [
-                    p.absolute()
-                    for p in map(pathlib.Path, files_missing_header)
-                ]
-                short_names = [
-                    pathlib.Path(p.parts[-2]).joinpath(
-                        pathlib.Path(p.parts[-1])
-                    )
-                    for p in file_paths
-                ]
-                files_missing_header_str = ', '.join(map(str, short_names))
-                logger.warning(
-                    'Files missing headers: %s', files_missing_header_str
-                )
-                row['Notes'] = (
-                    row['Notes']
-                    + f'❌Files missing headers: {files_missing_header_str}\n'
-                )
-                status = 1
+            extra_authors = None
+            if len(authors) > 3:
+                extra_authors = authors[3:]
+                authors = authors[:3]
+            for index, author in enumerate(authors):
+                heading = f'Partner{index}'
+                row[heading] = author['github'].replace('@', '').lower()
+            if extra_authors:
+                extra_github_handles = [extra_author['github'].replace('@', '').lower() for extra_author in extra_authors]
+                row['PartnerN'] = ';'.join(extra_github_handles)
+                
             # Check if files have changed
             if base_directory:
                 count = 0
@@ -594,7 +575,7 @@ def csv_solution_check_make(
                 row['Build'] = 0
                 row['Notes'] = row['Notes'] + '❌ Build failed\n'
                 row['Tests'] = '0/0'
-                status = 1
-            logger.info('End %s', identify(header))
+                status = 1                
+            logger.info('End %s', identify(authors))
         outcsv.writerow(row)
     sys.exit(status)

@@ -35,10 +35,9 @@ from ccsrcutilities import lint_check, format_check
 # from assessment import make_build
 import lab_config as cfg
 
-from parse_header import dict_header, header_keys
+from parse_authors import dict_authors, header_keys
 
-
-def header_check(file):
+def authors_check(file):
     """ Check file's header if it conforms to the standard given \
     in the example in the body of the function. Returns True if \
     the header is good. """
@@ -51,67 +50,50 @@ def header_check(file):
 
     # return true if header is good
     # pylint: disable-next=unused-variable
-    status, header = get_header_and_check(file)
+    status, authors = get_author_and_check(file)
     return status
 
 
-def get_header_and_check(file_path, comments_startwith='//'):
+def get_authors_and_check(file_path):
     """ Check file's header if it conforms to the standard given \
     in the example in the body of the function. Returns True if \
     the header is good. """
-    # https://docs.google.com/document/d/17WkDlxO92zpb26pYM1NIACPcMWtCOlKO7WCrWC6YxRo/edit#
-    # Example C++ header
-    # // Michael Shafae
-    # // mshafae@csu.fullerton.edu
-    # // @mshafae
-    # // Partners: @peteranteater, @ivclasers
+    # Michael Shafae
+    # mshafae@csu.fullerton.edu
+    # @mshafae
+    #
+    # Kevin Wortman
+    # kwortman@csu.fullerton.edu
+    # @kevinwortman
 
-    header = dict_header(file_path, comments_startwith=comments_startwith)
+    authors_list = dict_authors(file_path)
     status = True
-    missing_keys = list(set(header_keys) - set(header.keys()))
     logger = setup_logger()
-    if missing_keys:
+    if not authors_list:
         status = False
-        logger.warning('%s: missing %s fields', file_path, ', '.join(missing_keys))
-    return (status, header)
+    return (status, authors_list)
 
 
-def run_header_check(files):
+def run_authors_check(authors_file):
     """Main function; process each file given through get_header_and_check."""
     logger = setup_logger()
     status = 0
-    comments_startwith = '//'
-    if comments_startwith == '#':
-        # Python
-        style_url = (
-            'https://docs.google.com/document/d/'
-            '1OgC3_82oZHpTvoemGXu84FAdnshve4BCvtwaXZEJ9FY/edit?usp=sharing'
-        )
+    logger.info('Check authors file: %s', authors_file)
+    has_authors, authors_list = get_authors_and_check(authors_file)
+    if not has_authors:
+        logger.warning('Author file is malformed or missing.')
+        # logger.warning('Could not find a header in the file.')
+        # logger.warning(
+        #     'Information about header formatting is at %s', style_url
+        # )
+        # only set the status to fail if a bad header is encountered
+        status = 1
     else:
-        # C++
-        style_url = (
-            'https://docs.google.com/document/d/'
-            '17WkDlxO92zpb26pYM1NIACPcMWtCOlKO7WCrWC6YxRo/edit?usp=sharing'
-        )
-    status = 0
-    for in_file in files:
-        logger.info('Check header for file: %s', in_file)
-        has_header, header_d = get_header_and_check(in_file, comments_startwith)
-        if not has_header:
-            logger.warning('Header is malformed or missing.')
-            logger.warning('Could not find a header in the file.')
-            logger.warning(
-                'Information about header formatting is at %s', style_url
-            )
-            # only set the status to fail if a bad header is encountered
-            status = 1
-        else:
-            logger.info('Header found.')
-            logger.info("Name: %s", header_d['name'])
-            logger.info("Email: %s", header_d['email'])
-            logger.info("GitHub Handle: %s", header_d['github'])
-            logger.info("Partners: %s", header_d['partners'])
-
+        logger.info('Authors file found.')
+        for index, author in enumerate(authors_list):
+            logger.info("%d Name: %s", index, author['name'])
+            logger.info("%d Email: %s", index, author['email'])
+            logger.info("%d GitHub Handle: %s", index, author['github'])
     sys.exit(status)
 
 
@@ -259,8 +241,9 @@ def main():
         run_format_check(files)
     elif cmd == 'lint':
         run_lint_check(files)
-    elif cmd == 'header':
-        run_header_check(files)
+    elif cmd == 'authors':
+        # Assuming that authors is always one up which is dangerous.
+        run_authors_check(os.path.join('..', cfg.lab['author_file']))
     else:
         logger.error('No such command %s. Exiting.', cmd)
     sys.exit(status)

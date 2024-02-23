@@ -1,3 +1,4 @@
+# This is deprecated. Use parse_authors.py
 #
 # Copyright 2021-2023 Michael Shafae
 #
