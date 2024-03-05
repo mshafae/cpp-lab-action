@@ -184,7 +184,7 @@ authors:
 	@python3 ../.action/checks.py authors $(LAB_PART)
 
 test:
-	@python3 ../.config/solution_check.py $(LAB_PART) $(TARGET)
+	@python3 ../.config/system_test.py $(LAB_PART) $(TARGET)
 
 ifneq ($(DO_UNITTESTS), "True")
 unittest:
