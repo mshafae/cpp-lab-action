@@ -249,7 +249,11 @@ def main():
         run_lint_check(files)
     elif cmd == 'authors':
         # Assuming that authors is always one up which is dangerous.
-        run_authors_check(os.path.join('..', cfg.lab['author_file']))
+        authors_file = cfg.lab['author_file']
+        if not os.path.exists(authors_file):
+            authors_file = os.path.join('..', authors_file)
+            assert os.path.exists(authors_file)
+        run_authors_check(authors_file)
     else:
         logger.error('No such command %s. Exiting.', cmd)
     sys.exit(status)
