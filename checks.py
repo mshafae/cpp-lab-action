@@ -235,11 +235,13 @@ def main():
             # This is really fragile
             part_num = int(sys.argv[2][-1])
         except ValueError as exception:
-            logger.error(
-                'The name of the part, %s, does not match the pattern "part-N".', sys.argv[2]
+            logger.debug(
+                'The name of the part, %s, does not match the pattern "part-N", assuming a single part project.', sys.argv[2]
             )
-            logger.error(str(exception))
-            sys.exit(1)
+            logger.debug(str(exception))
+            # Assume it's part 0
+            if not len(cfg.lab['parts']) == 1: raise AssertionError
+            part_num = 0
         lab_config = cfg.lab['parts'][part_num - 1]
         files = lab_config['src'].split() + lab_config['header'].split()
     status = 1
