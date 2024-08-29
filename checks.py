@@ -245,9 +245,9 @@ def main():
         lab_config = cfg.lab['parts'][part_num - 1]
         files = lab_config['src'].split() + lab_config['header'].split()
     status = 1
-    if cmd == 'format':
+    if cmd == 'format' and cfg.makefiles[part_num - 1]['do_format_check']:
         run_format_check(files)
-    elif cmd == 'lint':
+    elif cmd == 'lint' and cfg.makefiles[part_num - 1]['do_lint_check']:
         run_lint_check(files)
     elif cmd == 'authors':
         # Assuming that authors is always one up which is dangerous.
