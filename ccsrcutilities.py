@@ -153,7 +153,7 @@ $(TARGET): $(OBJECTS)
 
 %.d: %.cc
 	set -e; $(CXX) -MM $(CXXFLAGS) $< \
-	| sed 's/\($*\)\.o[ :]*/\1.o $@ : /g' > $@; \
+	| sed 's/\\($*\\)\\.o[ :]*/\1.o $@ : /g' > $@; \
 	[ -s $@ ] || rm -f $@
 
 %.o: %.cc
