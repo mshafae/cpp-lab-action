@@ -416,14 +416,56 @@ def format_check(file):
     """ Use clang-format to check file's format against the \
     Google C++ style.
     Throws ChildProcessError if clang-format is not executable."""
-    # logger = setup_logger()
+    logger = setup_logger()
     # clang-format
     cmd = 'clang-format'
+    enable_debug = False
+    if enable_debug:
+        proc = subprocess.run(
+            ['cat /etc/os-release'],
+            capture_output=True,
+            shell=True,
+            timeout=1,
+            check=False,
+            text=True,
+        )
+        if proc.returncode != 0:
+            raise ChildProcessError('Could not cat /etc/os-release')
+        logger.debug('os-release:\n%s', str(proc.stdout))
+        
+        cmd_options = '--version'
+        _cmd = cmd + ' ' + cmd_options
+        proc = subprocess.run(
+            [_cmd],
+            capture_output=True,
+            shell=True,
+            timeout=1,
+            check=False,
+            text=True,
+        )
+        if proc.returncode != 0:
+            raise ChildProcessError('clang-format is not executable')
+        logger.debug('clang-format version: %s', str(proc.stdout))
+
+        cmd_options = '-style=Google --dump-config'
+        _cmd = cmd + ' ' + cmd_options
+        proc = subprocess.run(
+            [_cmd],
+            capture_output=True,
+            shell=True,
+            timeout=1,
+            check=False,
+            text=True,
+        )
+        if proc.returncode != 0:
+            raise ChildProcessError('clang-format is not executable')
+        logger.debug('clang-format config:\n%s', str(proc.stdout))
+    
     cmd_options = '-style=Google --Werror'
-    cmd = cmd + ' ' + cmd_options + ' ' + file
-    # logger.debug('clang format: %s', cmd)
+    _cmd = cmd + ' ' + cmd_options + ' ' + file
+    logger.debug('clang format command: %s', _cmd)
     proc = subprocess.run(
-        [cmd],
+        [_cmd],
         capture_output=True,
         shell=True,
         timeout=10,
