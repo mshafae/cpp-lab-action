@@ -263,12 +263,12 @@ def create_clang_compile_commands_db(
     """Create a Clang compile commands DB named
     compile_commands.json in the current working directory."""
     out = 'compile_commands.json'
-    linux_includes = ' -I/usr/include/c++/9/'
-    darwin_includes = ' -D OSX -nostdinc++ -I/opt/local/include/libcxx/v1'
+    linux_includes = ' '
+    darwin_includes = ' '
     my_platform = platform.system()
     logger = setup_logger()
     if not compile_cmd:
-        compile_cmd = 'clang++ -g -O3 -Wall -pipe -std=c++14'
+        compile_cmd = 'clang++ -g -O3 -Wall -pipe -std=c++17'
     if my_platform == 'Linux':
         compile_cmd = compile_cmd + linux_includes
     elif my_platform == 'Darwin':
