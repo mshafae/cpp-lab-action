@@ -69,12 +69,17 @@ def mk_makefiles(repo_root, config=cfg, makefile_name='Makefile'):
     (relative or fully qualified path), generate all makefiles"""
     logger = setup_logger()
     now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    if cfg.lab['hidden_makefiles']:
+    if cfg.lab['hidden_makefiles'] and not makefile_name.startswith('.'):
         makefile_name = f'.{makefile_name}'
     # Make makefiles for each part
     for part in range(config.lab['num_parts']):
-        part_num = part + 1
-        part_path = os.path.join(repo_root, f'part-{part_num}')
+        if config.lab['single_project']:
+            logger.info('Flat, single project layout. No parts.')
+            assert(config.lab['num_parts'] == 1)
+            part_path = repo_root
+        else:
+            part_num = part + 1
+            part_path = os.path.join(repo_root, f'part-{part_num}')
         makefile_path = os.path.join(part_path, makefile_name)
         part_cfg = config.lab['parts'][part]
         part_makefile = f"""
@@ -232,12 +237,13 @@ $(SUBDIRS):
 .PHONY: $(TOPTARGETS) $(SUBDIRS)
 
 """
-    target = os.path.join(repo_root, makefile_name)
-    if os.path.exists(target):
-        logger.info(f'File {target} exists. Backing it up.')
-        backup_file(target)
-    with open(target, 'w', encoding='UTF-8') as file_handle:
-        file_handle.write(top_level_makefile)
+    if not config.lab['single_project']:
+        target = os.path.join(repo_root, makefile_name)
+        if os.path.exists(target):
+            logger.info(f'File {target} exists. Backing it up.')
+            backup_file(target)
+        with open(target, 'w', encoding='UTF-8') as file_handle:
+            file_handle.write(top_level_makefile)
 
 
 def mk_doxyfile(target_dir, doxyfile='Doxyfile'):
