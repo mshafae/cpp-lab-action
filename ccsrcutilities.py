@@ -159,7 +159,7 @@ $(TARGET): $(OBJECTS)
 -include $(DEP)
 
 %.d: %.cc
-	set -e; $(CXX) -MM $(CXXFLAGS) $< \
+	@set -e; $(CXX) -MM $(CXXFLAGS) $< \
 	| sed 's/\\($*\\)\\.o[ :]*/\1.o $@ : /g' > $@; \
 	[ -s $@ ] || rm -f $@
 
