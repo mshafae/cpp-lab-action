@@ -41,6 +41,15 @@ except ImportError as e:
     sys.path.append(join(join(dirname(__file__), '..'), '.config'))
     import lab_config as cfg
 
+try:
+    import clang_tidy_config as tidy_cfg
+except ImportError as e:
+    from os.path import join, dirname
+
+    sys.path.append(join(join(dirname(__file__), '..'), '.config'))
+    import clang_tidy_config as tidy_cfg
+
+
 from parse_authors import dict_authors, header_keys
 
 def authors_check(file):
@@ -165,7 +174,7 @@ def run_lint_check(files):
             logger.debug('File %s does not exist. Continuing.', in_file)
             continue
         # Use global lint configuration
-        tidy_opts = cfg.global_tidy_options_string
+        tidy_opts = tidy_cfg.global_tidy_options_string
         lint_warnings = lint_check(in_file, tidy_opts)
         if len(lint_warnings) != 0:
             logger.error('Linter found improvements.')

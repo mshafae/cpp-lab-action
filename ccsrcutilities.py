@@ -77,9 +77,11 @@ def mk_makefiles(repo_root, config=cfg, makefile_name='Makefile'):
             logger.info('Flat, single project layout. No parts.')
             assert(config.lab['num_parts'] == 1)
             part_path = repo_root
+            script_prefix = ''
         else:
             part_num = part + 1
             part_path = os.path.join(repo_root, f'part-{part_num}')
+            script_prefix = '../'
         makefile_path = os.path.join(part_path, makefile_name)
         part_cfg = config.lab['parts'][part]
         part_makefile = f"""
@@ -180,16 +182,16 @@ compilecmd:
 	@echo "$(CXX) $(CXXFLAGS)"
 
 format:
-	@python3 ../.action/checks.py format $(LAB_PART)
+	@python3 {script_prefix}.action/checks.py format $(LAB_PART)
 
 lint:
-	@python3 ../.action/checks.py lint $(LAB_PART)
+	@python3 {script_prefix}.action/checks.py lint $(LAB_PART)
 
 authors:
-	@python3 ../.action/checks.py authors $(LAB_PART)
+	@python3 {script_prefix}.action/checks.py authors $(LAB_PART)
 
 test:
-	@python3 ../.config/system_test.py $(LAB_PART) $(TARGET)
+	@python3 {script_prefix}.config/system_test.py $(LAB_PART) $(TARGET)
 
 ifneq ($(DO_UNITTESTS), "True")
 unittest:
@@ -345,53 +347,53 @@ def remove_cpp_comments(file):
     return no_comments
 
 
-def makefile_has_compilecmd(target_makefile):
-    """Given a Makefile, see if it has the compilecmd target which prints
-    the compilation command to stdout."""
-    has_compilecmd = False
-    logger = setup_logger()
-    try:
-        with open(target_makefile, encoding='UTF-8') as file_handle:
-            has_compilecmd = file_handle.read().find('compilecmd:') != -1
-    except FileNotFoundError as exception:
-        logger.error('Cannot open Makefile "%s" for reading.', target_makefile)
-        logger.error(exception)
-    return has_compilecmd
+# def makefile_has_compilecmd(target_makefile):
+#     """Given a Makefile, see if it has the compilecmd target which prints
+#     the compilation command to stdout."""
+#     has_compilecmd = False
+#     logger = setup_logger()
+#     try:
+#         with open(target_makefile, encoding='UTF-8') as file_handle:
+#             has_compilecmd = file_handle.read().find('compilecmd:') != -1
+#     except FileNotFoundError as exception:
+#         logger.error('Cannot open Makefile "%s" for reading.', target_makefile)
+#         logger.error(exception)
+#     return has_compilecmd
 
 
-def makefile_get_compilecmd(target_dir, compiler='clang++'):
-    """Given a Makefile with the compilecmd target, return the string
-    which represents the compile command. For use with making the
-    compile database for linting."""
-    logger = setup_logger()
-    compilecmd = None
-    makefiles = glob.glob(
-        os.path.join(target_dir, '*Makefile'), recursive=False
-    )
-    # Break on the first matched Makefile with compilecmd
-    matches = None
-    for makefile in makefiles:
-        if makefile_has_compilecmd(makefile):
-            cmd = 'make -C {} compilecmd'.format(target_dir)
-            proc = subprocess.run(
-                [cmd],
-                capture_output=True,
-                shell=True,
-                timeout=10,
-                check=False,
-                text=True,
-            )
-            matches = [
-                line
-                for line in str(proc.stdout).split('\n')
-                if line.startswith(compiler)
-            ]
-            break
-    if matches:
-        compilecmd = matches[0]
-    else:
-        logger.debug('Could not identify compile command; using default.')
-    return compilecmd
+# def makefile_get_compilecmd(target_dir, compiler='clang++'):
+#     """Given a Makefile with the compilecmd target, return the string
+#     which represents the compile command. For use with making the
+#     compile database for linting."""
+#     logger = setup_logger()
+#     compilecmd = None
+#     makefiles = glob.glob(
+#         os.path.join(target_dir, '*Makefile'), recursive=False
+#     )
+#     # Break on the first matched Makefile with compilecmd
+#     matches = None
+#     for makefile in makefiles:
+#         if makefile_has_compilecmd(makefile):
+#             cmd = 'make -C {} compilecmd'.format(target_dir)
+#             proc = subprocess.run(
+#                 [cmd],
+#                 capture_output=True,
+#                 shell=True,
+#                 timeout=10,
+#                 check=False,
+#                 text=True,
+#             )
+#             matches = [
+#                 line
+#                 for line in str(proc.stdout).split('\n')
+#                 if line.startswith(compiler)
+#             ]
+#             break
+#     if matches:
+#         compilecmd = matches[0]
+#     else:
+#         logger.debug('Could not identify compile command; using default.')
+#     return compilecmd
 
 
 def strip_and_compare_files(base_file, submission_file):
@@ -499,24 +501,33 @@ def lint_check(file, tidy_options=None, skip_compile_cmd=False):
     defined in the function. """
     logger = setup_logger()
     # clang-tidy
+
     if not skip_compile_cmd:
-        logger.debug(
-            'Checking for makefile in %s',
-            os.path.dirname(os.path.realpath(file)),
-        )
-        compilecmd = makefile_get_compilecmd(
-            os.path.dirname(os.path.realpath(file))
-        )
-        logger.debug('Makefile reported compile commmand as %s', compilecmd)
-    if not skip_compile_cmd and compilecmd:
-        logger.debug('Using compile command %s', compilecmd)
-        create_clang_compile_commands_db(
-            remove_existing_db=True, compile_cmd=compilecmd
-        )
-        logger.debug('Created clang compile command db.')
-    elif not skip_compile_cmd and not compilecmd:
-        logger.debug('Creating compile commands.')
-        create_clang_compile_commands_db(files=[file], remove_existing_db=True)
+        if cfg.lab['single_project']:
+            part_num = 0
+        else:
+            # Grab part number from the dirname containing file
+            # Assumes single digit value
+            part_num = int(os.path.dirname(os.path.realpath(file))[-1]) - 1
+            assert(part_num < len(cfg.lab['parts']))
+
+        compilecmd = cfg.lab['parts'][part_num]['CXX'] + ' ' + cfg.lab['parts'][part_num]['CXXFLAGS']
+
+        logger.debug('Lab configuration reported compile command as %s', compilecmd)
+    else:
+        compilecmd = '-std=c++17'
+
+    # if not skip_compile_cmd and compilecmd:
+    #     logger.debug('Using compile command %s', compilecmd)
+    #     create_clang_compile_commands_db(
+    #         remove_existing_db=True, compile_cmd=compilecmd
+    #     )
+    #     logger.debug('Created clang compile command db.')
+    # elif not skip_compile_cmd and not compilecmd:
+    #     logger.debug('Creating compile commands.')
+    #     create_clang_compile_commands_db(files=[file], remove_existing_db=True)
+
+
     cmd = 'clang-tidy'
     if not tidy_options:
         logger.debug('Using default tidy options.')
@@ -532,9 +543,9 @@ def lint_check(file, tidy_options=None, skip_compile_cmd=False):
         # cmd_options = '-checks="*"'
     else:
         cmd_options = tidy_options
-    cmd = cmd + ' ' + cmd_options + ' ' + file
-    if skip_compile_cmd:
-        cmd = cmd + ' -- -std=c++17'
+
+    cmd = cmd + ' ' + cmd_options + ' ' + file + ' -- ' + compilecmd
+
     logger.debug('Tidy command %s', cmd)
     proc = subprocess.run(
         [cmd],
