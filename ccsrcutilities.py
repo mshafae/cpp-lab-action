@@ -511,7 +511,14 @@ def lint_check(file, tidy_options=None, skip_compile_cmd=False):
             part_num = int(os.path.dirname(os.path.realpath(file))[-1]) - 1
             assert(part_num < len(cfg.lab['parts']))
 
-        compilecmd = cfg.lab['parts'][part_num]['CXX'] + ' ' + cfg.lab['parts'][part_num]['CXXFLAGS']
+        if platform.system() == 'Darwin':
+            # Darwin CXXFLAGS
+            cxxflags = cfg.lab['parts'][part_num]['CXXFLAGS']  + ' ' + cfg.lab['parts'][part_num]['darwin_CXXFLAGS']
+        else:
+            # Linux CXXFLAGS
+            cxxflags = cfg.lab['parts'][part_num]['CXXFLAGS']  + ' ' + cfg.lab['parts'][part_num]['linux_CXXFLAGS']
+
+        compilecmd = cfg.lab['parts'][part_num]['CXX'] + ' ' + cxxflags
 
         logger.debug('Lab configuration reported compile command as %s', compilecmd)
     else:
