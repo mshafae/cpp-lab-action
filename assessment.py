@@ -253,12 +253,14 @@ def csv_solution_check_make(
     # Make, the CWD is the part and not the repository root.
     # print(f'target_directory {target_directory}')
     # print(f'CWD: {os.getcwd()}')
-    if os.path.basename(os.getcwd()) != target_directory:
+    # if os.path.basename(os.getcwd()) != target_directory:
+    if cfg.lab['single_project']:
         # This is a GitHub action running the solution check
         # directly as a standalone progrom. The program will be
         # running outside of the part directory.
         # print('case 1')
-        abs_path_target_dir = os.path.join(os.getcwd(), target_directory)
+        # abs_path_target_dir = os.path.join(os.getcwd(), target_directory)
+        abs_path_target_dir = os.getcwd()
         repo_root = os.getcwd()
         cwd_name = os.path.basename(os.getcwd())
         repo_name = os.path.basename(repo_root)
@@ -317,7 +319,12 @@ def csv_solution_check_make(
         )
         if not valid_date:
             last_commit = date.today().isoformat()
-        row['DaysLate'] = days_late(lab_due_date, last_commit)
+            logger.debug('No valid date for last commit.')
+            row['DaysLate'] = 'No valid date for last commit.'
+        else:
+            logger.debug(f'Last commit on {last_commit}')
+            row['DaysLate'] = days_late(lab_due_date, last_commit)
+            logger.debug(f'Lab due date: {lab_due_date}; Days late {row['DaysLate']}')
         # Init to empty string so you're always adding notes.
         row['Notes'] = ''
         if not files:
@@ -341,7 +348,7 @@ def csv_solution_check_make(
             # Authors check
             authors_file = os.path.join(repo_root, cfg.lab['author_file'])
             authors = null_authors_list()
-            if not os.path.exists(authors_file):                
+            if not os.path.exists(authors_file):
                 logger.error(
                     '❌ No AUTHORS.md file provided'
                 )
