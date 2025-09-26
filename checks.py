@@ -229,7 +229,7 @@ def main():
     # The definition of the files is based off of the repo's root
     # directory. We can get the absolute path however we only can do that if the path is 
     # correct at this point. Let's leave them as relative paths (strings) for now and see
-    # if conversion to fully qualified paths is neceesary.
+    # if conversion to fully qualified paths is necessary.
     files = []
     if sys.argv[2] == 'all':
         # All parts
