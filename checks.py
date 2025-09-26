@@ -27,6 +27,7 @@
 
 """ All the different checks needed to help a student turn in a perfect CPSC 120 lab. """
 
+import re
 import sys
 import os.path
 from logger import setup_logger
@@ -239,19 +240,22 @@ def main():
                     l = [os.path.join(part_name, file_name) for file_name in part['src'].split()]
                     files += l
     else:
-        # Just one part
-        try:
-            # This is really fragile
-            part_num = int(sys.argv[2][-1])
-        except ValueError as exception:
+        # Just one part, try to match part-1, part-2, part-03, part-99
+        part_regex_pattern = r'^part-([0-9][0-9]?)$'
+        part_regex = re.compile(part_regex_pattern)
+        match = part_regex.match(sys.argv[2])
+        if match:
+            part_name_num = int(match.group(1))
+        else:
+            part_name_num = 1
             logger.debug(
-                'The name of the part, %s, does not match the pattern "part-N", assuming a single part project.', sys.argv[2]
+                    'The name of the part, %s, does not match the pattern "part-N", assuming a single part project.', sys.argv[2]
             )
-            logger.debug(str(exception))
-            # Assume it's part 0
-            if not len(cfg.lab['parts']) == 1: raise AssertionError
-            part_num = 0
-        lab_config = cfg.lab['parts'][part_num - 1]
+            # Assume it's part 1, but double check
+            if not cfg.lab['single_project'] or not len(cfg.lab['parts']) == 1: raise AssertionError
+        # Count from 0...
+        part_num = part_name_num - 1
+        lab_config = cfg.lab['parts'][part_num]
         files = lab_config['src'].split() + lab_config['header'].split()
     status = 1
     if cmd == 'format' and cfg.makefiles[part_num - 1]['do_format_check']:
